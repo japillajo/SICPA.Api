@@ -14,7 +14,7 @@
 
         public int EnterpriseId { get; set; }
         public Enterprise Enterprise { get; set; }
-        public List<DepartmentEmployee> DepartmentEmployees { get; set; }
+        //public List<DepartmentEmployee> DepartmentEmployees { get; set; }
 
     }
 }

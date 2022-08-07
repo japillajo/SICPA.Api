@@ -3,7 +3,20 @@ using Microsoft.EntityFrameworkCore;
 using SICPA.Api.Data;
 using SICPA.Api.Models;
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy =>
+                      {
+                          policy.WithOrigins("*");
+                          policy.WithHeaders("*");
+                          policy.WithMethods("*");
+                      });
+});
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -56,13 +69,20 @@ app.MapPost("/employees/", async (Employee e, SicpaDbContext db) =>
 
 app.MapGet("/employees/{id:int}", async (int id, SicpaDbContext db) =>
 {
-    return await db.Employees.FindAsync(id)
+    return await db.Employees
+                        .Include(e => e.DepartmentEmployees.Where(d => d.Status))
+                        .ThenInclude(d => d.Department)
+                        .Where(e => e.Id == id)
+                        .FirstOrDefaultAsync()
     is Employee e
     ? Results.Ok(e)
     : Results.NotFound();
 });
 
-app.MapGet("/employees", async (SicpaDbContext db) => await db.Employees.ToListAsync());
+app.MapGet("/employees", async (SicpaDbContext db) => await db.Employees
+                                                                    .Include(e => e.DepartmentEmployees.Where(d => d.Status))
+                                                                    .ThenInclude(d => d.Department)
+                                                                    .ToListAsync());
 
 app.MapPut("/employees/{id:int}", async (int id, Employee e, SicpaDbContext db) =>
 {
@@ -79,7 +99,7 @@ app.MapPut("/employees/{id:int}", async (int id, Employee e, SicpaDbContext db) 
     employee.Email = e.Email;
     employee.Age = e.Age;
     employee.Status = e.Status;
-    employee.ModifiedDate = new DateTime();
+    employee.ModifiedDate = e.ModifiedDate;
     employee.ModifiedBy = e.ModifiedBy;
 
     await db.SaveChangesAsync();
@@ -131,9 +151,9 @@ app.MapPut("/enterprises/{id:int}", async (int id, Enterprise e, SicpaDbContext 
 
     enterprise.Name = e.Name;
     enterprise.Address = e.Address;
-    enterprise.Position = e.Position;
+    enterprise.Phone = e.Phone;
     enterprise.Status = e.Status;
-    enterprise.ModifiedDate = new DateTime();
+    enterprise.ModifiedDate = e.ModifiedDate;
     enterprise.ModifiedBy = e.ModifiedBy;
 
     await db.SaveChangesAsync();
@@ -172,8 +192,8 @@ app.MapGet("/departments/{id:int}", async (int id, SicpaDbContext db) =>
     : Results.NotFound();
 });
 
-app.MapGet("/departments", async (SicpaDbContext db) => await db.Departments.ToListAsync());
 
+app.MapGet("/departments", async (SicpaDbContext db) => await db.Departments.Include(d => d.Enterprise).ToListAsync());
 app.MapPut("/departments/{id:int}", async (int id, Department e, SicpaDbContext db) =>
 {
     if (e.Id != id)
@@ -219,37 +239,35 @@ app.MapPost("/departmentemployees/", async (DepartmentEmployee e, SicpaDbContext
     return Results.Created($"/departmentemployees/{e.Id}", e);
 });
 
-app.MapGet("/departmentemployees/{employeeId:int}", async (int employeeId, SicpaDbContext db) =>
+app.MapGet("/departmentemployees/{id:int}", async (int id, SicpaDbContext db) =>
 {
-    return await db.DepartmentEmployees.FindAsync(employeeId)
+    return await db.DepartmentEmployees.FindAsync(id)
     is DepartmentEmployee e
     ? Results.Ok(e)
     : Results.NotFound();
 });
 
-//app.MapPut("/departmentemployees/{employeeId:int}", async (int employeeId, DepartmentEmployee e, SicpaDbContext db) =>
-//{
-//    if (e.EmployeeId != employeeId)
-//        return Results.BadRequest();
+app.MapPut("/departmentemployees/{id:int}", async (int id, DepartmentEmployee e, SicpaDbContext db) =>
+{
+    if (e.Id != id)
+        return Results.BadRequest();
 
-//    var department = await db.Departments.FindAsync(id);
+    var departmentEmployee = await db.DepartmentEmployees.FindAsync(id);
 
-//    if (department == null) return Results.NotFound();
+    if (departmentEmployee == null) return Results.NotFound();
 
-//    department.Name = e.Name;
-//    department.Description = e.Description;
-//    department.Phone = e.Phone;
-//    department.Status = e.Status;
-//    department.ModifiedDate = new DateTime();
-//    department.ModifiedBy = e.ModifiedBy;
-//    department.EnterpriseId = e.EnterpriseId;
+    departmentEmployee.Status = e.Status;
+    departmentEmployee.ModifiedDate = e.ModifiedDate;
+    departmentEmployee.ModifiedBy = e.ModifiedBy;
 
-//    await db.SaveChangesAsync();
+    await db.SaveChangesAsync();
 
-//    return Results.Ok(department);
-//});
+    return Results.Ok(departmentEmployee);
+});
 
 #endregion
+
+app.UseCors(MyAllowSpecificOrigins);
 
 app.Run();
 

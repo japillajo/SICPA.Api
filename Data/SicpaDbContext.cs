@@ -15,7 +15,7 @@ namespace SICPA.Api.Data
         public DbSet<DepartmentEmployee> DepartmentEmployees => Set<DepartmentEmployee>();
 
         // dotnet tool install --global dotnet-ef Se asegura de tener disponibles todos los comandos de EF
-        // dotnet ef migrations add firstmigration --project SICPA.Api.csproj Crear migraaciones Code first
+        // dotnet ef migrations add firstmigration --project SICPA.Api.csproj Crear migraciones Code first
         // dotnet ef database update firstmigration --project SICPA.Api.csproj Crear base de datos
     }
 }

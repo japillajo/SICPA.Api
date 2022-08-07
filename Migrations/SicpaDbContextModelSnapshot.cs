@@ -188,7 +188,7 @@ namespace SICPA.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Position")
+                    b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -214,13 +214,13 @@ namespace SICPA.Api.Migrations
             modelBuilder.Entity("SICPA.Api.Models.DepartmentEmployee", b =>
                 {
                     b.HasOne("SICPA.Api.Models.Department", "Department")
-                        .WithMany()
+                        .WithMany("DepartmentEmployees")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("SICPA.Api.Models.Employee", "Employee")
-                        .WithMany()
+                        .WithMany("DepartmentEmployees")
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -228,6 +228,16 @@ namespace SICPA.Api.Migrations
                     b.Navigation("Department");
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("SICPA.Api.Models.Department", b =>
+                {
+                    b.Navigation("DepartmentEmployees");
+                });
+
+            modelBuilder.Entity("SICPA.Api.Models.Employee", b =>
+                {
+                    b.Navigation("DepartmentEmployees");
                 });
 
             modelBuilder.Entity("SICPA.Api.Models.Enterprise", b =>
